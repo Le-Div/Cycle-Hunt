@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Simple Map</title>  
+    <link href="player1.css" rel="stylesheet">
+  
+  </head>
+
+  <body id="mainbody" >
+      <div id="controlDiv">
+        <h1>Control center</h1>
+        <form class="form">
+          <div id="eingabe">
+            <div id="in1">Origin:<br>Destination:</div>
+            <div id="in2"><input type="text" id="from"><br><input type="text" id="to"></div>
+          </div>
+          <div id="in3">Calculate Route: <input type="button" onclick="calcRoute();"></div>
+          <div id="in4">Start: <input type="button" onclick="driveRoute();"></div>
+        </form>
+      </div>
+      <div id="map"></div>
+    
+      <!-- 
+     The `defer` attribute causes the callback to execute after the full HTML
+     document has been parsed. For non-blocking uses, avoiding race conditions,
+     and consistent behavior across browsers, consider loading using Promises
+     with https://www.npmjs.com/package/@googlemaps/js-api-loader.
+    -->
+
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB81Oc92c8J2OK9wdSSmotAsH28Ki5n0WQ&libraries=places"></script>
+    <script src="player1.js"></script>
+    
+  
+  </body>
+</html>

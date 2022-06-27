@@ -1,0 +1,40 @@
+#mainbody{
+    margin: 0px;
+}
+
+#map{
+    height:100vh;
+    width: calc(100%-400px);
+} 
+
+#controlDiv{
+    width: 400px;
+    height: 100vh;
+    background-color: white;
+    float: left;  
+    text-align: center;
+}
+
+#eingabe{
+    height: 50px;
+    width: 100%;
+    background-color: white;
+    margin-top: 20px;
+}
+
+#in1{
+    width: max-content;
+    text-align: right;
+    background-color: white;
+    line-height: 1.5;
+    float: left;
+    margin-left: 80px;
+}
+
+#in2{
+    width: max-content;
+    padding-left: 10px;
+    float: left;
+    line-height: 1.5;
+    background-color: white;
+}
