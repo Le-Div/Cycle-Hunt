@@ -1,5 +1,7 @@
 
 
+
+// Google maps variables
 let boston = {lat: 42.3601,lng: -71.0589};
 let DirectionResults ;
     
@@ -24,6 +26,72 @@ var marker2;
 var drivingProcess;
 var my_path;
 
+var origin = boston;
+var destination = null;
+
+// Click to add marker variables
+var clickMarker;
+
+map.addListener("click", (mapsMouseEvent) => {
+    
+    //Set the destination position
+    destination = mapsMouseEvent.latLng;
+
+    //Set a marker at the destination position
+    if(clickMarker!=null){
+        clickMarker.setMap(null);
+    }
+    
+    clickMarker = new google.maps.Marker({
+        position: mapsMouseEvent.latLng,
+    });
+    clickMarker.setMap(map);
+
+    //calculate Route 
+});
+
+async function setOrigin(){
+
+    var address = document.getElementById("from").value;
+    var error = null;
+
+    if(address!=''){
+       await addressToLatLong(address)
+       .then((result) => {
+            origin=result})
+       .catch((err)=>{
+            error = err;
+            alert('Something went wrong:' + err)});
+    }
+
+    if(error==null){
+        var originMarker = new google.maps.Marker({
+            position: origin,
+        })
+        originMarker.setMap(map);
+    }
+    else{
+        return;
+    }
+}
+
+function addressToLatLong(address){
+    
+    return new Promise((resolve,reject) => {
+
+        var geocoder = new google.maps.Geocoder();
+
+        geocoder.geocode( { 'address': address}, function(results,status){
+            if(status=='OK'){
+                 resolve(results[0].geometry.location);
+            }
+            else{
+                reject(status);
+            }
+        });
+    });
+}
+
 function showMarkers(locationArray,col){
     for (i=0;i<locationArray.length;i++){
         var marker = new google.maps.Marker({
@@ -35,12 +103,12 @@ function showMarkers(locationArray,col){
 }
 
 
-function calcRoute() {
+function calcRoute(ori,desti) {
 
     // create a request
     var request = {
-        origin: document.getElementById("from").value,
-        destination: document.getElementById("to").value,
+        origin: ori,
+        destination: desti,
         travelMode: google.maps.TravelMode.DRIVING,
         unitSystem: google.maps.UnitSystem.METRIC
     }
@@ -158,5 +226,5 @@ var options = {
 var input1 = document.getElementById("from");
 var autocomplete1 = new google.maps.places.Autocomplete(input1, options);
 
-var input2 = document.getElementById("to");
-var autocomplete2 = new google.maps.places.Autocomplete(input2, options);
+//var input2 = document.getElementById("to");
+//var autocomplete2 = new google.maps.places.Autocomplete(input2, options);
