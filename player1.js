@@ -1,4 +1,6 @@
-
+//==================================
+//  Initialization
+//==================================
 
 
 // Google maps variables
@@ -11,64 +13,116 @@ var mapOptions = {
     disableDefaultUI: true
 }
 
+// initialize google api objects
 var map = new google.maps.Map(document.getElementById('map'),mapOptions);
-
 var directonsService = new google.maps.DirectionsService();
-
 var directionsDisplay = new google.maps.DirectionsRenderer();
         
 directionsDisplay.setMap(map);
 
-
 // Simulation Variables
-var time = 0;
-var marker2;
 var drivingProcess;
-var my_path;
+var currentPolyLine;
+var currentPath;
 
-var origin = boston;
+// Calculate route markers
+
+//Destination
 var destination = null;
+var destinationMarker;
 
-// Click to add marker variables
-var clickMarker;
+//Cycleposition
+var cyclePosition = boston;
+var cycleMarker = new google.maps.Marker({
+    position: cyclePosition,
+    //draggable: true,
+    icon: '../images/bicycle.png'
+})
+cycleMarker.setMap(map);
 
-map.addListener("click", (mapsMouseEvent) => {
+// Add event listeners
+var driveToggle = document.getElementById("driveBicycle")
+driveToggle.addEventListener('change',driveRoute);
+
+
+map.addListener("click", async function(mapsMouseEvent){
     
-    //Set the destination position
-    destination = mapsMouseEvent.latLng;
+    var moveBicycleChecked = document.getElementById("moveBicycle").checked;
 
-    //Set a marker at the destination position
-    if(clickMarker!=null){
-        clickMarker.setMap(null);
+    
+    if(moveBicycleChecked){
+        cyclePosition = mapsMouseEvent.latLng;
+        cycleMarker.setPosition(cyclePosition);
     }
     
-    clickMarker = new google.maps.Marker({
-        position: mapsMouseEvent.latLng,
-    });
-    clickMarker.setMap(map);
+    else{
+        //Set the destination position
+        destination = mapsMouseEvent.latLng;
+
+        if(destinationMarker!=null){
+            destinationMarker.setMap(null);
+        }
+
+        destinationMarker = new google.maps.Marker({
+            position: destination,
+            //icon: '../images/bicycle.png'
+        })
+        
+        destinationMarker.setMap(map);
+    }
 
     //calculate Route 
+    if(destination){
+
+        await calcRoute(cyclePosition,destination);
+
+        if(drivingProcess==null){
+            driveRoute();
+        }
+    }
 });
 
-async function setOrigin(){
+//update slider value
+var velocitySlider = document.getElementById("velocitySlider");
+var velocityDisplay = document.getElementById("velocityDisplay");
+velocityDisplay.innerHTML = velocitySlider.value;
+
+velocitySlider.oninput = function() {
+    velocityDisplay.innerHTML = this.value;
+}
+
+
+//=========================================
+// Functions
+//=========================================
+
+async function setCyclePosition(){
 
     var address = document.getElementById("from").value;
     var error = null;
 
+    if(cycleMarker!=null){
+        cycleMarker.setMap(null);
+    }
+
     if(address!=''){
        await addressToLatLong(address)
        .then((result) => {
-            origin=result})
+            cyclePosition=result})
        .catch((err)=>{
             error = err;
             alert('Something went wrong:' + err)});
     }
 
     if(error==null){
-        var originMarker = new google.maps.Marker({
-            position: origin,
+        cycleMarker = new google.maps.Marker({
+            position: cyclePosition,
         })
-        originMarker.setMap(map);
+        cycleMarker.setMap(map);
+
+        if(destination){
+            calcRoute(cyclePosition,destination);
+        }
     }
     else{
         return;
@@ -105,50 +159,58 @@ function showMarkers(locationArray,col){
 
 function calcRoute(ori,desti) {
 
-    // create a request
-    var request = {
-        origin: ori,
-        destination: desti,
-        travelMode: google.maps.TravelMode.DRIVING,
-        unitSystem: google.maps.UnitSystem.METRIC
-    }
+    return new Promise((resolve,reject) => {
 
-    // pass the request to the route method
-    directonsService.route(request, function (result,status) {
+        // create a request
+        var request = {
+            origin: ori,
+            destination: desti,
+            travelMode: google.maps.TravelMode.DRIVING,
+            unitSystem: google.maps.UnitSystem.METRIC
+        }
 
-        if (status == google.maps.DirectionsStatus.OK) {
-            
-            DirectionResults = result;
-            //showMarkers(DirectionResults.routes[0].overview_path)
-            //console.log(DirectionResults.routes[0].overview_path.length)
+        // pass the request to the route method
+        directonsService.route(request, function (result,status) {
 
-            if(my_path != null){
-                my_path.setMap(null);
+            if (status == google.maps.DirectionsStatus.OK) {
+                
+                DirectionResults = result;
+                currentPath = result.routes[0].overview_path;
+
+                drawPath();
+                resolve();
             }
 
-            my_path = new google.maps.Polyline({
-                path: DirectionResults.routes[0].overview_path,
-                geodesic: true,
-                strokeColor: "#FF0000",
-                strokeOpacity: 1.0,
-                strokeWeight: 2,
-            });
+            else{
+                directionsDisplay.setDirections({routes: []});
+                map.setCenter(cyclePosition);
+                reject();
+            }
+        });
 
-            my_path.setMap(map);
-            
-            //directionsDisplay.setDirections(result);
-        }
-
-        else{
-            directionsDisplay.setDirections({routes: []});
-            map.setCenter(boston);
-        }
-    });
+    })
 }
+
+function drawPath(){
+    
+    if(currentPolyLine != null){
+        currentPolyLine.setMap(null);
+    }
+
+    currentPolyLine = new google.maps.Polyline({
+        path: currentPath,
+        geodesic: true,
+        strokeColor: "#FF0000",
+        strokeOpacity: 1.0,
+        strokeWeight: 2,
+    });
+
+    currentPolyLine.setMap(map);
+}
+
 
 function getDistances() {
     
-    var currentPath = DirectionResults.routes[0].overview_path;
     var cl = currentPath.length;
     var AllDistances = new Array(cl-1); // values in meters
 
@@ -162,11 +224,9 @@ function getDistances() {
 
 function mainLoop(){
 
-    time++;
-    var currentPath = DirectionResults.routes[0].overview_path;
-    var velocity = 10; // Value in meters per second
+    var velocity = velocitySlider.value; // Value in meters per second default value is 10
     var AllDistances = getDistances();
-    var s = velocity*time*5;
+    var s = velocity*5;
     var D = AllDistances[0];
     var cnt=1;
 
@@ -174,57 +234,48 @@ function mainLoop(){
         D += AllDistances[cnt];
         
         if(cnt==AllDistances.length){
-            marker2.setPosition(currentPath[cnt]);
+            cycleMarker.setPosition(currentPath[cnt]);
             clearInterval(drivingProcess);
-            time = 0;
             return;
         }
-        
+
         cnt++;
     }
-
 
     var proz = 1-(D/AllDistances[cnt-1])+(s/AllDistances[cnt-1]);
     var position = google.maps.geometry.spherical.interpolate(currentPath[cnt-1],currentPath[cnt],proz);
 
-    //console.log(position);
-    
-    if(time==1){
-        marker2 = new google.maps.Marker({
-            position: position,
-            draggable: true,
-            icon: 'https://img.icons8.com/fluent/48/000000/marker-storm.png',
-        });
+    // Update the position
+    cycleMarker.setPosition(position);
+    cyclePosition = position;
 
-        marker2.setMap(map);
+    //update path
+    for(i=0;i<cnt;i++){
+        currentPath.shift();
     }
-    else{
-        marker2.setPosition(position);
-    }
+    currentPath.unshift(position);
+    drawPath();
 
-    if((cnt+1)==currentPath.length){
+    // Reset after reaching the finish
+    if(currentPath.length<10){
         clearInterval(drivingProcess);
-        time = 0;
+        drivingProcess=null;
     }
 }
 
 
 function driveRoute(){
 
-    if(marker2 != null){
-    marker2.setMap(null);
+    var loopFrequency = 2; // Milliseconds
+
+    if(driveToggle.checked && destination){
+        drivingProcess = setInterval(mainLoop,loopFrequency);
     }
-    drivingProcess = setInterval(mainLoop,1);
-    //mainLoop();
+    else{
+        clearInterval(drivingProcess);
+        drivingProcess=null;
+    }
 }
 
 
-var options = {
-    types: ['(cities)']
-}
 
-var input1 = document.getElementById("from");
-var autocomplete1 = new google.maps.places.Autocomplete(input1, options);
-
-//var input2 = document.getElementById("to");
-//var autocomplete2 = new google.maps.places.Autocomplete(input2, options);

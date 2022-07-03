@@ -9,14 +9,30 @@
   <body id="mainbody" >
       <div id="controlDiv">
         <h1>Control center</h1>
-        <form class="form">
           <div id="eingabe">
-            <div id="in1">Origin:</div>
-            <div id="in2"><input type="text" id="from"></div>
+            
+            <label class="switch">
+              Move Bicycle 
+              <input type="checkbox" id="moveBicycle">
+              <span class="slider round"></span>
+            </label> 
+            <br>
+            <br>
+            <label class="switch2">
+              Drive! 
+              <input type="checkbox" id="driveBicycle">
+              <span class="slider round"></span>
+            </label> 
+            <br>
+            <br>
+            <label class="slider">
+              Velocity
+              <input type="range" min="1" max="50" value="10" id="velocitySlider">
+            </label>
+
+            <div id="velocityDisplay"></div>
+
           </div>
-          <div id="in3">Set origin: <input type="button" onclick="setOrigin();"></div>
-          <!--<div id="in4">Start: <input type="button" onclick="driveRoute();"></div>-->
-        </form>
       </div>
       <div id="map"></div>
     
